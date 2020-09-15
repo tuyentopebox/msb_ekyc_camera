@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "739019929913",
+    "firebase_url": "https://msb-camera.firebaseio.com",
+    "project_id": "msb-camera",
+    "storage_bucket": "msb-camera.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:739019929913:android:2bc394795b11ba160090e8",
+        "android_client_info": {
+          "package_name": "com.msb.msb_ekyc_camera_example"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "739019929913-1estu9bbbj0dm153tirq036ag0m1ka5i.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCO4H3xZ3uS1bZEH_Pd5F8WtitP5f2F4yo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "739019929913-1estu9bbbj0dm153tirq036ag0m1ka5i.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
