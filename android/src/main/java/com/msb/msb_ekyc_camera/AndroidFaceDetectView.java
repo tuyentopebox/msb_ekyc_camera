@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.Manifest;
 import android.os.CountDownTimer;
 import android.util.Log;
+import android.text.TextUtils;
 import androidx.annotation.Nullable;
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.EventChannel;
@@ -40,6 +41,8 @@ import io.flutter.plugin.common.MethodChannel.MethodCallHandler;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -84,7 +87,6 @@ public class AndroidFaceDetectView implements PlatformView, MethodCallHandler, O
                             @Override
                             public void onListen(Object arguments, EventChannel.EventSink sink) {
                                 eventSink = sink;
-                                eventSink.success("onListen");
                                 EKYCLogger.print(TAG, "Create event stream success! onListen");
                             }
 
@@ -107,7 +109,6 @@ public class AndroidFaceDetectView implements PlatformView, MethodCallHandler, O
         Log.i(TAG, "onMethodCall " + call.method);
         switch (call.method) {
             case "startCamera":
-                result.success(viewId);
                 startEkycModule(detectionParams);
                 break;
             case "stopCamera":
@@ -157,6 +158,14 @@ public class AndroidFaceDetectView implements PlatformView, MethodCallHandler, O
      * starting ekyc
      */
     private void init() {
+        sendEventToDart("initSuccess", String.valueOf(viewId));
+    }
+
+    /**
+     *
+     * @param detectionParams
+     */
+    private void startEkycModule(DetectionParams detectionParams){
         ekycManager = new EKYCManager(registrar.activity(),this);
         detectionParams = new DetectionParams();
         gestures = new ArrayList<>();
@@ -171,15 +180,6 @@ public class AndroidFaceDetectView implements PlatformView, MethodCallHandler, O
         gestures.add(gesture3);
 
         detectionParams.setGestureList(gestures);
-
-        //startEkycModule(detectionParams);
-    }
-
-    /**
-     *
-     * @param detectionParams
-     */
-    private void startEkycModule(DetectionParams detectionParams){
         ekycManager.startDetection(cameraSourcePreview,graphicOverlay,detectionParams);
         countDownTimer = detectNextGesture();
     }
@@ -248,5 +248,19 @@ public class AndroidFaceDetectView implements PlatformView, MethodCallHandler, O
         //TODO fire event to web
         //cleaning detector
         //Toast.makeText(this, "face detection completed.", Toast.LENGTH_LONG).show();
+    }
+
+    void sendEventToDart(String eventType, @Nullable String eventData) {
+        if (eventSink == null) {
+            Log.e(TAG,"Send event fail: eventType: " + eventType + " event channel not ready!");
+            return;
+        }
+
+        Map<String, String> event = new HashMap<>();
+        event.put("eventType", eventType);
+        if (!TextUtils.isEmpty(eventData)) {
+            event.put("eventData", eventData);
+        }
+        eventSink.success(event);
     }
 }

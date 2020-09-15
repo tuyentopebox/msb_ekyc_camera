@@ -1,10 +1,9 @@
 import 'package:msb_ekyc_camera/msb_ekyc_camera.dart';
-import 'package:msb_ekyc_camera/msb_ekyc_camera.dart';
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 String _label;
-Function(String result) _resultCallback;
+Function(dynamic event) _eventHandler;
 
 ///
 /// AppMSBEkycFaceDetectWidget
@@ -12,10 +11,10 @@ class AppMSBEkycFaceDetectWidget extends StatefulWidget {
   ///
   ///
   AppMSBEkycFaceDetectWidget.defaultStyle({
-    Function(String result) resultCallback,
+    Function(dynamic event) eventHandler,
     String label = 'MSB Ekyc Camera: Face Detect',
   }) {
-    _resultCallback = resultCallback ?? (String result) {};
+    _eventHandler = eventHandler ?? (String result) {};
     _label = label;
   }
 
@@ -93,19 +92,26 @@ class _MSBEkycCameraFaceDetectWidgetState extends State<_MSBEkycCameraFaceDetect
   void initState() {
     super.initState();
 
-    _faceDetectController = FaceDetectController(faceDetectResult: (result) {
-      _resultCallback(result);
-    }, faceDetectViewCreated: () {
-      TargetPlatform platform = Theme.of(context).platform;
-      if (TargetPlatform.iOS == platform) {
-        Future.delayed(Duration(seconds: 2), () {
-          _faceDetectController.startCamera();
-          _faceDetectController.startCameraPreview();
-        });
-      } else {
-        _faceDetectController.startCamera();
-        _faceDetectController.startCameraPreview();
+    _faceDetectController = FaceDetectController(faceDetectEventHandler: (event) {
+      _eventHandler(event);
+      final Map<dynamic, dynamic> map = event;
+      print('face_detect_view_event_channel event receive: ' + event.toString());
+      switch (map['eventType']) {
+        case 'initSuccess':
+          TargetPlatform platform = Theme.of(context).platform;
+          if (TargetPlatform.iOS == platform) {
+            Future.delayed(Duration(seconds: 2), () {
+              _faceDetectController.startCamera();
+              _faceDetectController.startCameraPreview();
+            });
+          } else {
+            _faceDetectController.startCamera();
+            _faceDetectController.startCameraPreview();
+          }
+          break;
       }
+    }, faceDetectViewCreated: () {
+
     });
   }
 

@@ -56,18 +56,8 @@ class _FaceDetectWidgetState
     _eventSubscription =
         EventChannel('face_detect_view_event_channel')
             .receiveBroadcastStream()
-            .listen(_listener);
+            .listen(widget._faceDetectController._faceDetectEventHandler);
   }
-
-    void _listener(dynamic event) {
-      //final Map<dynamic, dynamic> map = event;
-      print('face_detect_view_event_channel event receive: ' + event.toString());
-      /*switch (map['eventType']) {
-        case 'error':
-
-          break;
-      }*/
-    }
 
   @override
   void dispose() {
@@ -88,16 +78,16 @@ class _FaceDetectWidgetState
 class FaceDetectController {
   ///
   /// Result
-  Function(String result) _faceDetectResult;
+  Function(dynamic event) _faceDetectEventHandler;
   Function() _faceDetectViewCreated;
 
   ///
   /// Constructor.
   FaceDetectController({
-    @required faceDetectResult(String result),
+    @required faceDetectEventHandler(dynamic event),
     faceDetectViewCreated(),
   }) {
-    _faceDetectResult = faceDetectResult;
+    _faceDetectEventHandler = faceDetectEventHandler;
     _faceDetectViewCreated = faceDetectViewCreated;
   }
 
@@ -124,8 +114,7 @@ class FaceDetectController {
   ///
   /// Start camera preview with open Face detect,this is open code scanner.
   startCameraPreview() async {
-    String code = await MSBEkycCameraFaceDetectPlatform.instance.startCameraPreview();
-    _faceDetectResult(code);
+    MSBEkycCameraFaceDetectPlatform.instance.startCameraPreview();
   }
 
   ///

@@ -25,10 +25,8 @@ class _CustomSizeFaceDetectPageState extends State<CustomSizeFaceDetectPage> {
           ),
           Expanded(
             child: AppMSBEkycFaceDetectWidget.defaultStyle(
-              resultCallback: (String code) {
-                setState(() {
-                  _code = code;
-                });
+              eventHandler: (dynamic event) {
+
               },
             ),
           ),
