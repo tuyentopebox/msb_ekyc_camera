@@ -78,6 +78,12 @@ abstract class MSBEkycCameraFaceDetectPlatform extends ChangeNotifier
   }
 
   ///
+  /// Init camera without open Face Detect camera.
+  initCamera() async {
+    return await MSBEkycCameraPlatform.methodChannelFaceDetect.invokeMethod("initCamera");
+  }
+
+  ///
   /// Start camera without open Face Detect camera,this is just open camera.
   startCamera() async {
     _isStartCamera = true;

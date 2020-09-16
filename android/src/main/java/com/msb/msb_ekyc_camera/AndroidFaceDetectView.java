@@ -51,11 +51,13 @@ public class AndroidFaceDetectView implements PlatformView, MethodCallHandler, O
 
     private static final String TAG = "AndroidFaceDetectView";
 
-    int viewId;
-    Context context;
-    Registrar registrar;
-    View view;
-    MethodChannel channel;
+    private int viewId;
+    private Context context;
+    private Registrar registrar;
+    private View view;
+    private MethodChannel channel;
+    private boolean channelReady = false;
+    private boolean permisstionGranted = false;
 
     private EKYCManager ekycManager = null;
     private DetectionParams detectionParams = null;
@@ -65,7 +67,7 @@ public class AndroidFaceDetectView implements PlatformView, MethodCallHandler, O
     @BindView(R2.id.firePreview)
     CameraSourcePreview cameraSourcePreview;
     List<Gesture> gestures = null;
-    Gson gson  = new Gson();
+    private static Gson gson  = new Gson();
 
     @Nullable private EventChannel.EventSink eventSink;
 
@@ -74,29 +76,31 @@ public class AndroidFaceDetectView implements PlatformView, MethodCallHandler, O
         this.registrar = registrar;
         this.viewId = id;
         this.view = LayoutInflater.from(registrar.activity()).inflate(R.layout.ekyc_preview, null);
+        this.channelReady = false;
+        this.permisstionGranted = false;
 
         ButterKnife.bind(this, view);
 
         channel = new MethodChannel(registrar.messenger(), "face_detect_view_method_channel");
         channel.setMethodCallHandler(this);
 
-        //event channel
-        new EventChannel(registrar.messenger(), "face_detect_view_event_channel")
-                .setStreamHandler(
-                        new EventChannel.StreamHandler() {
-                            @Override
-                            public void onListen(Object arguments, EventChannel.EventSink sink) {
-                                eventSink = sink;
-                                EKYCLogger.print(TAG, "Create event stream success! onListen");
-                            }
-
-                            @Override
-                            public void onCancel(Object arguments) {
-                                eventSink = null;
-                            }
-                        });
-
         HardwarePermissionCheck();
+
+        // init ekyc params
+        ekycManager = new EKYCManager(registrar.activity(),this);
+        detectionParams = new DetectionParams();
+        gestures = new ArrayList<>();
+        long time = 30*1000;
+        Gesture gesture0= new Gesture("blink_eye",time,0,0);
+        Gesture gesture1= new Gesture("turn_right",time,0,0);
+        Gesture gesture2 = new Gesture("turn_left",time,0,0);
+        Gesture gesture3 = new Gesture("smile",time,0,0);
+        gestures.add(gesture0);
+        gestures.add(gesture1);
+        gestures.add(gesture2);
+        gestures.add(gesture3);
+
+        detectionParams.setGestureList(gestures);
     }
 
     @Override
@@ -108,6 +112,10 @@ public class AndroidFaceDetectView implements PlatformView, MethodCallHandler, O
     public void onMethodCall(MethodCall call, MethodChannel.Result result) {
         Log.i(TAG, "onMethodCall " + call.method);
         switch (call.method) {
+            case "initCamera":
+                init();
+                result.success(String.valueOf(viewId));
+                break;
             case "startCamera":
                 startEkycModule(detectionParams);
                 break;
@@ -130,7 +138,8 @@ public class AndroidFaceDetectView implements PlatformView, MethodCallHandler, O
 
     @Override
     public void dispose() {
-
+        channelReady = false;
+        permisstionGranted = false;
     }
 
     /**
@@ -143,7 +152,8 @@ public class AndroidFaceDetectView implements PlatformView, MethodCallHandler, O
                     @Override
                     public void onPermissionsChecked(MultiplePermissionsReport multiplePermissionsReport) {
                         if (multiplePermissionsReport.areAllPermissionsGranted()){
-                            init();
+                            Log.i(TAG, "All permission granted!");
+                            permisstionGranted = true;
                         }
                     }
 
@@ -155,10 +165,48 @@ public class AndroidFaceDetectView implements PlatformView, MethodCallHandler, O
     }
 
     /**
-     * starting ekyc
+     * waiting init event channel
      */
+    private CountDownTimer initTimer;
     private void init() {
-        sendEventToDart("initSuccess", String.valueOf(viewId));
+        Log.i(TAG, "init() viewId: " + viewId);
+        new EventChannel(registrar.messenger(), "face_detect_view_event_channel_" + viewId)
+                .setStreamHandler(
+                        new EventChannel.StreamHandler() {
+                            @Override
+                            public void onListen(Object arguments, EventChannel.EventSink sink) {
+                                eventSink = sink;
+                                channelReady = true;
+                                EKYCLogger.print(TAG, "Create event stream success! onListen");
+                            }
+
+                            @Override
+                            public void onCancel(Object arguments) {
+                                eventSink = null;
+                            }
+                        });
+        initTimer = new CountDownTimer(5*1000, 1000L) {
+            public void onTick(long millisUntilFinished) {
+                Log.i(TAG, "initTimer Ontick" + channelReady + permisstionGranted);
+                if (channelReady && permisstionGranted) {
+                    initSuccess();
+                }
+            }
+
+            public void onFinish() {
+            }
+        };
+        initTimer.start();
+    }
+
+    private void initSuccess () {
+        initTimer.cancel();
+        String jsonString = gson.toJson(detectionParams.getGestureList());
+        EKYCLogger.print(TAG,"Gesture list json: " + jsonString);
+        Map<String, Object> event = new HashMap<>();
+        event.put("eventType", "initSuccess");
+        event.put("eventData", jsonString);
+        eventSink.success(event);
     }
 
     /**
@@ -166,20 +214,6 @@ public class AndroidFaceDetectView implements PlatformView, MethodCallHandler, O
      * @param detectionParams
      */
     private void startEkycModule(DetectionParams detectionParams){
-        ekycManager = new EKYCManager(registrar.activity(),this);
-        detectionParams = new DetectionParams();
-        gestures = new ArrayList<>();
-        long time = 30*1000;
-        Gesture gesture0= new Gesture("blink_eye",time,0,0);
-        Gesture gesture1= new Gesture("turn_right",time,0,0);
-        Gesture gesture2 = new Gesture("turn_left",time,0,0);
-        Gesture gesture3 = new Gesture("smile",time,0,0);
-        gestures.add(gesture0);
-        gestures.add(gesture1);
-        gestures.add(gesture2);
-        gestures.add(gesture3);
-
-        detectionParams.setGestureList(gestures);
         ekycManager.startDetection(cameraSourcePreview,graphicOverlay,detectionParams);
         countDownTimer = detectNextGesture();
     }

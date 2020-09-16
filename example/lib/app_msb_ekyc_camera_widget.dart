@@ -92,27 +92,7 @@ class _MSBEkycCameraFaceDetectWidgetState extends State<_MSBEkycCameraFaceDetect
   void initState() {
     super.initState();
 
-    _faceDetectController = FaceDetectController(faceDetectEventHandler: (event) {
-      _eventHandler(event);
-      final Map<dynamic, dynamic> map = event;
-      print('face_detect_view_event_channel event receive: ' + event.toString());
-      switch (map['eventType']) {
-        case 'initSuccess':
-          TargetPlatform platform = Theme.of(context).platform;
-          if (TargetPlatform.iOS == platform) {
-            Future.delayed(Duration(seconds: 2), () {
-              _faceDetectController.startCamera();
-              _faceDetectController.startCameraPreview();
-            });
-          } else {
-            _faceDetectController.startCamera();
-            _faceDetectController.startCameraPreview();
-          }
-          break;
-      }
-    }, faceDetectViewCreated: () {
-
-    });
+    _faceDetectController = FaceDetectController(context);
   }
 
   @override
