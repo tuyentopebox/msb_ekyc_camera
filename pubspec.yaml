@@ -1,5 +1,5 @@
 name: msb_ekyc_camera
-description: Support for native ekyc libs(Android 、iOS), and support the showing camera widget embedded in Flutter pages
+description: Support for native ekyc libs(Android & iOS), and support the showing camera widget embedded in Flutter pages
 version: 1.0.0
 homepage: https://github.com/tuyentopebox
 repository: https://github.com/tuyentopebox/msb_ekyc_camera.git
